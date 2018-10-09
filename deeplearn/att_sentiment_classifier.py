@@ -56,6 +56,7 @@ class ATTSentimentClassifier(object):
 
         for index, row in train_data.iterrows():
             row.review = BeautifulSoup(row.review, features="html.parser").get_text()
+            row.review = cont.expand_texts(row.review, precise=True)
 
         train_data.review = cls.clean_reviews(train_data.review)
 

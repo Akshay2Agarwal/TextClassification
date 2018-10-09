@@ -1,6 +1,6 @@
 from flask import Flask, Response, request
 from celery import Celery
-from deeplearn.train_sentiment_classifier import ATTSentimentClassifier
+from deeplearn.att_sentiment_classifier import ATTSentimentClassifier
 from deeplearn.predict_sentiment import PredictSentiment
 import pickle
 from keras.models import load_model
