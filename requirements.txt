@@ -1,0 +1,10 @@
+pandas==0.23.4
+pycontractions==2.0.0
+tensorflow==1.11.0
+Keras==2.2.4
+nltk==3.3
+Flask==1.0.2
+celery==4.2.1
+numpy==1.15.2
+gensim==3.6.0
+beautifulsoup4==4.6.3
