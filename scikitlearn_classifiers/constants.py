@@ -1,0 +1,1 @@
+MULTICATEGORY_TRAIN_FILE = "/home/akshay.agarwal/Documents/Kaggle/NewsTextCategorization/bbc-text.csv"

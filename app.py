@@ -1,7 +1,7 @@
 from flask import Flask, Response, request
 from celery import Celery
-from deeplearn.att_sentiment_classifier import ATTSentimentClassifier
-from deeplearn.predict_sentiment import PredictSentiment
+from deep_learn.att_sentiment_classifier import ATTSentimentClassifier
+from deep_learn.predict_sentiment import PredictSentiment
 import pickle
 from keras.models import load_model
 import os
@@ -22,7 +22,7 @@ def about_application():
 @celery.task
 def train_att_sentiment_classifier():
     att_sentiment_classifier = ATTSentimentClassifier()
-    att_sentiment_classifier.train_model()
+    att_sentiment_classifier._train_model()
 
 if not os.path.isfile("reviews_tokenizer.pkl"):
     train_att_sentiment_classifier.apply_async()
