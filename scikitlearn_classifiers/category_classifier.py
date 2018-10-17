@@ -18,19 +18,20 @@ from sklearn.model_selection import cross_val_score
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.pipeline import Pipeline
 import seaborn as sns
 import matplotlib.pyplot as plt
+import pickle
 
-class TextCategorizer(object):
+class TextCategorizer:
 
     def __init__(self):
         self.__spacyNlp = spacy.load("en")
 
     @classmethod
-    async def clean_data(cls, text, remove_stops=False, stemming=False, lemmatization=False):
-        txt = str(text)
+    async def clean_data(cls, text : str, remove_stops : bool = False, stemming : bool = False, lemmatization : bool = False) -> str:
 
-        txt = ' '.join([w for w in txt.split() if len(w) > 1])
+        txt = ' '.join([w for w in text.split() if len(w) > 1])
 
         # Remove urls and emails
         txt = re.sub(r'^https?:\/\/.*[\r\n]*', ' ', txt, flags=re.MULTILINE)
@@ -64,9 +65,10 @@ class TextCategorizer(object):
 
         return txt
 
-    def _clean_texts(self, texts):
+    def _clean_texts(self, texts : pd.Series) -> pd.Series:
         event_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(event_loop)
+        tasks = ()
         tasks = (self.clean_data(text, True, False, True) for text in texts)
         try:
             result = event_loop.run_until_complete(asyncio.gather(*tasks))
@@ -74,19 +76,19 @@ class TextCategorizer(object):
             event_loop.close()
         return result
 
-    def __get_ner_tagged_text(self, text):
+    def __get_ner_tagged_text(self, text : str) -> str:
         tokens = self.__spacyNlp(text)
 
         for ent in tokens.ents:
             if ent.label_ in ("DATE", "TIME", "PERCENT", "MONEY", "QUANTITY", "ORDINAL", "CARDINAL"):
-                text = str(text).replace(ent.text, ent.label_)
+                text = text.replace(ent.text, ent.label_)
         return text
 
-    def ner_tagging_replacement(self, texts):
+    def ner_tagging_replacement(self, texts) -> list:
         tagged_txts= [self.__get_ner_tagged_text(text) for text in texts]
         return tagged_txts
 
-    def train_categorizer(self, train_data):
+    def train_categorizer(self, train_data : pd.DataFrame) -> None:
         train_data.text = category_classifier._clean_texts(train_data.text)
         train_data.text = category_classifier.ner_tagging_replacement(train_data.text)
         train_data['category_id'] = train_data['category'].factorize()[0]
@@ -136,9 +138,14 @@ class TextCategorizer(object):
                       size=8, jitter=True, edgecolor="gray", linewidth=2)
         plt.show()
 
-        print(cv_df.groupby('model_name').accuracy.mean())
+        mean_acc = cv_df.groupby('model_name').accuracy.mean()
+        max_idx = pd.Series(mean_acc.values).idxmax()
+        training_model = models[max_idx]
 
-if __name__ == '__main__':
+        training_model.fit(features, labels)
+        pickle.dump(training_model, open("../category_classifier.pkl", "wb"))
+
+if __name__=='__main__':
     train_data = pd.read_csv(MULTICATEGORY_TRAIN_FILE)
     category_classifier = TextCategorizer()
     category_classifier.train_categorizer(train_data)

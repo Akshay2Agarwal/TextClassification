@@ -3,18 +3,17 @@ from bs4 import BeautifulSoup
 from nltk.tokenize import sent_tokenize
 from keras.preprocessing.text import text_to_word_sequence
 import numpy as np
-from deeplearn import constants
+from deep_learn import constants
 
 
-class PredictSentiment():
+class PredictSentiment:
 
     @classmethod
-    def _clean_str(cls, strings):
+    def _clean_str(cls, strings : str) -> str:
         """
         Tokenization/string cleaning for dataset
         Every dataset is lower cased except
         """
-        strings = str(strings)
         strings = re.sub(r"\\", "", strings)
         strings = re.sub(r"\'", "", strings)
         strings = re.sub(r"\"", "", strings)
@@ -22,7 +21,7 @@ class PredictSentiment():
         return strings.strip().lower()
 
     @classmethod
-    def predict(cls, review_to_predict, review_tokenizer, reviews_classifier):
+    def predict(cls, review_to_predict : str, review_tokenizer, reviews_classifier) -> list:
         review_to_predict = BeautifulSoup(review_to_predict, features="html.parser").get_text()
         review_cleaned = cls._clean_str(review_to_predict)
         review_sents = sent_tokenize(review_cleaned)

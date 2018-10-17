@@ -1,10 +1,11 @@
 import re
 import numpy as np
+import pandas as pd
 from bs4 import BeautifulSoup
 import asyncio
 from nltk import tokenize
 import gensim
-from deeplearn import fetch_data, constants, attention_layer
+from deep_learn import fetch_data, constants, attention_layer
 from keras.preprocessing.text import Tokenizer, text_to_word_sequence
 from keras.utils.np_utils import to_categorical
 from keras.layers import Embedding, Dense, Input, Dropout, LSTM, Bidirectional, TimeDistributed
@@ -15,15 +16,14 @@ import tensorflow as tf
 import pickle
 
 
-class ATTSentimentClassifier(object):
+class ATTSentimentClassifier:
 
     @classmethod
-    async def clean_str(cls, strings):
+    async def clean_str(cls, strings : str) -> str:
         """
         Tokenization/string cleaning for dataset
         Every dataset is lower cased except
         """
-        strings = str(strings)
         strings = re.sub(r"\\", "", strings)
         strings = re.sub(r"\'", "", strings)
         strings = re.sub(r"\"", "", strings)
@@ -31,7 +31,7 @@ class ATTSentimentClassifier(object):
         return strings.strip().lower()
 
     @classmethod
-    def clean_reviews(cls, reviews):
+    def _clean_reviews(cls, reviews : str) -> pd.Series:
         event_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(event_loop)
         tasks = (cls.clean_str(review) for review in reviews)
@@ -42,12 +42,12 @@ class ATTSentimentClassifier(object):
         return result
 
     @classmethod
-    def _tokenize_sentences(cls, reviews):
-        for review in reviews:
+    def _tokenize_sentences(cls, reviews : pd.Series) -> None:
+        for _, review in reviews.iteritems():
             yield tokenize.sent_tokenize(review)
 
     @classmethod
-    def train_model(cls):
+    def _train_model(cls) -> None:
         dao = fetch_data.FetchData()
         train_data = dao._fetch_imdb_train_data()
 
@@ -58,7 +58,7 @@ class ATTSentimentClassifier(object):
             row.review = BeautifulSoup(row.review, features="html.parser").get_text()
             row.review = cont.expand_texts(row.review, precise=True)
 
-        train_data.review = cls.clean_reviews(train_data.review)
+        train_data.review = cls._clean_reviews(train_data.review)
 
         reviews = list(cls._tokenize_sentences(train_data.review))
 
@@ -67,7 +67,7 @@ class ATTSentimentClassifier(object):
         tokenizer = Tokenizer(num_words=constants.MAX_NB_WORDS)
         tokenizer.fit_on_texts(train_data.review)
 
-        data = np.zeros((len(train_data.review), constants.MAX_SENTS, constants.MAX_SENT_LENGTH), dtype='int32')
+        data = np.zeros((len(train_data.review), constants.MAX_SENTS, constants.MAX_SENT_LENGTH), dtype='float32')
 
         words = list()
         for i, sentences in enumerate(reviews):
@@ -103,7 +103,7 @@ class ATTSentimentClassifier(object):
         embedding_layer = Embedding(len(word_index) + 1, constants.EMBEDDING_DIM, weights=[word_embedding_matrix],
                                     input_length=constants.MAX_SENT_LENGTH, trainable=True)
 
-        sentence_input = Input(shape=(constants.MAX_SENT_LENGTH,), dtype='float64')
+        sentence_input = Input(shape=(constants.MAX_SENT_LENGTH,), dtype='float32')
         embedded_sequences = embedding_layer(sentence_input)
         sentence_lstm = Bidirectional(LSTM(200, return_sequences=True))(embedded_sequences)
         l_dropout = Dropout(0.5)(sentence_lstm)
@@ -134,4 +134,4 @@ class ATTSentimentClassifier(object):
 
 
 if __name__ == '__main__':
-    ATTSentimentClassifier().train_model()
+    ATTSentimentClassifier._train_model()
